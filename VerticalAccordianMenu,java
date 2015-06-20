@@ -1,0 +1,202 @@
+import java.awt.*;
+import java.awt.event.*;
+import javax.swing.*;
+
+public class VerticalAccordianMenu extends JPanel implements ActionListener
+{
+	private static final long serialVersionUID = 1L;
+	
+	// First the three container panels
+	private JPanel topPanel = new JPanel( new GridLayout( 1, 1 ) );
+	private JPanel contentPanel = new JPanel();
+	private JPanel bottomPanel = new JPanel( new GridLayout( 1, 1 ) );
+	
+	// Panel bookkeeping variables
+	private int currentPanel = 0;
+	private int completedPanels = 3;
+	private int totalPanels = 3;
+	private VerticalAccordianMenuContents[] panelContents = new VerticalAccordianMenuContents[totalPanels];
+	
+	// Panel options
+	private int BrightnessChange = -10; // Difference in brightness (- or +)
+	
+	public VerticalAccordianMenu(Dimension size) {
+		this.setLayout( new BorderLayout() );
+	    this.setPreferredSize(size);
+	    this.add( topPanel, BorderLayout.NORTH );
+	    this.add( bottomPanel, BorderLayout.SOUTH );
+	    this.addContents();
+	    this.render();
+	}
+	
+	public void addContents() {
+		
+		// Panels
+		Color firstPanelBG = new Color(69,185,183);
+		JPanel firstPanel = new JPanel();
+		firstPanel.setBackground(firstPanelBG);
+		
+		Color secondPanelBG = new Color(64,172,170);
+		JPanel secondPanel = new JPanel();
+		secondPanel.setBackground(secondPanelBG);
+		
+		Color thirdPanelBG = new Color(55,146,145);
+		JPanel thirdPanel = new JPanel();
+		thirdPanel.setBackground(thirdPanelBG);
+		
+		Color textColor = new Color(40,108,107);
+		panelContents[0] = new VerticalAccordianMenuContents("First Menu Item", "", 0, firstPanelBG, textColor, firstPanel);
+		panelContents[1] = new VerticalAccordianMenuContents("Second Menu Item", "", 1, secondPanelBG, textColor, secondPanel);
+		panelContents[2] = new VerticalAccordianMenuContents("Third Menu Item", "", 2, thirdPanelBG, textColor, thirdPanel);
+	}
+	
+	public void renderTopButtons() {
+		this.topPanel.removeAll();
+		GridLayout topLayout = ( GridLayout )this.topPanel.getLayout();
+	    topLayout.setRows( currentPanel+1 );
+	    for( int i=0; i<=currentPanel; i++ )
+	    {
+			JLabel label = new JLabel(panelContents[i].getTitle(), JLabel.CENTER);
+			String labelIcon = "";
+			if(i==currentPanel) {
+				// Apply the difference in brightness
+				int red = panelContents[i].getBackground().getRed() + BrightnessChange;
+				int blue = panelContents[i].getBackground().getBlue() + BrightnessChange;
+				int green = panelContents[i].getBackground().getGreen() + BrightnessChange;
+	    		label.setForeground(Color.white);
+	    		label.setBackground(new Color(red, green, blue));
+	    		labelIcon = panelContents[i].getIconTitle() + "Large.png";
+	    	} else {
+	    		label.setBackground(panelContents[i].getBackground());
+	    		label.setForeground(panelContents[i].getForeground());
+	    		labelIcon = panelContents[i].getIconTitle() + "Small.png";
+	    	}
+			label.setFont(new Font("HELVETICA", Font.BOLD, 20));
+			if(panelContents[i].getIconTitle() != "") {
+				label.setIcon(createImageIcon(labelIcon));
+			}
+			label.setOpaque(true);
+			ButtonListener buttonListener = new ButtonListener(label, i);
+			label.addMouseListener(buttonListener);
+			this.topPanel.add(label);
+	    }	
+	    this.topPanel.validate();
+	}
+	
+	public void renderBottomButtons() {
+		
+		// Start from scratch
+		this.bottomPanel.removeAll();
+		GridLayout topLayout = ( GridLayout )this.bottomPanel.getLayout();
+	    topLayout.setRows( totalPanels - currentPanel );
+	    for( int i=currentPanel+1; i < totalPanels; i++ )
+	    {
+	    	JLabel label = new JLabel(panelContents[i].getTitle(), JLabel.CENTER);
+    		label.setBackground(panelContents[i].getBackground());
+    		label.setForeground(panelContents[i].getForeground());
+    		label.setFont(new Font("HELVETICA", Font.BOLD, 20));
+    		if(panelContents[i].getIconTitle() != "") {
+    			label.setIcon(createImageIcon(panelContents[i].getIconTitle() + "Small.png"));
+    		}
+			label.setOpaque(true);
+			ButtonListener buttonListener = new ButtonListener(label, i);
+			label.addMouseListener(buttonListener);
+			this.bottomPanel.add(label);
+	    }
+	    this.bottomPanel.validate();
+	}
+	
+	public void renderContent() {
+		if(this.contentPanel != null) {
+			this.remove(contentPanel);
+		}
+		contentPanel = panelContents[currentPanel].getPanel();
+		contentPanel.repaint();
+		this.add(contentPanel,BorderLayout.CENTER);
+	}
+	
+	public void render() {
+		renderTopButtons();
+		renderContent();
+		renderBottomButtons();
+		this.revalidate();
+	}
+	
+	// Move it up one if not already completed
+	public void changeCompletedPanels(int newPanelNum) {
+		if(newPanelNum > completedPanels) {
+			completedPanels = newPanelNum;
+		}
+	}
+	
+	public void resetCompletedPanels() {
+		completedPanels = 0;
+		currentPanel = 1;
+		render();
+	}
+	
+	public void showNewPanel(int labelNum) {
+		if(completedPanels > labelNum) {
+			currentPanel = labelNum;
+			render();
+			setCursor (Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+		}
+	}
+	
+	public class ButtonListener implements MouseListener {
+		private JLabel label;
+		private Color oldColor;
+		private int labelNum = 0;
+		
+		public ButtonListener(JLabel lbl, int num) {
+			label=lbl;
+			labelNum = num;
+		}
+		
+		public void mouseEntered(MouseEvent e) {
+			if(completedPanels > labelNum) {
+				setCursor (Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+				oldColor = label.getForeground();
+				label.setForeground(Color.white);
+				if(panelContents[labelNum].getIconTitle() != "") {
+					if(labelNum == currentPanel) {
+						label.setIcon(createImageIcon(panelContents[labelNum].getIconTitle() + "Large.png"));
+					} else {
+						label.setIcon(createImageIcon(panelContents[labelNum].getIconTitle() + "Small-hover.png"));
+					}
+				}
+			}
+		}
+
+		public void mouseExited(MouseEvent e) {
+			if(completedPanels > labelNum) {
+				setCursor (Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+				label.setForeground(oldColor);
+				if(panelContents[labelNum].getIconTitle() != "") {
+					if(labelNum == currentPanel) {					
+						label.setIcon(createImageIcon(panelContents[labelNum].getIconTitle() + "Large.png"));
+					} else {
+						label.setIcon(createImageIcon(panelContents[labelNum].getIconTitle() + "Small.png"));
+					}
+				}
+			}
+		}
+		public void mousePressed(MouseEvent e) {
+			showNewPanel(labelNum);
+		}
+		public void mouseReleased(MouseEvent e) {}  // Blank
+		public void mouseClicked(MouseEvent e) {}  // Blank
+	}
+	
+	public void actionPerformed(ActionEvent arg0) {}  // Nothing to see here
+	
+	static ImageIcon createImageIcon(String path) {
+		java.net.URL imgURL = VerticalAccordianMenu.class.getResource(path);
+		if (imgURL != null) {
+			return new ImageIcon(imgURL);
+		} else {
+			System.out.println("Unable to find file: " + path);
+			return null;
+		}
+	}
+}
